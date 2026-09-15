@@ -1,0 +1,55 @@
+name: Build and Deploy to Aliyun ESA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: esa-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Astro ISB (incremental static builds) reuses page output from the last
+      # build. Restore the cacheDir BEFORE `astro build`; Astro itself
+      # invalidates stale entries (module-graph hash + per-page cacheKey), so a
+      # rolling restore-key that always grabs the newest cache is safe.
+      - name: Restore Astro incremental build cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-isb-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            astro-isb-${{ runner.os }}-
+
+      - name: Build
+        run: bun run build
+
+      - name: Login to Aliyun ESA
+        run: npx esa-cli login --skip-update-check --access-key-id "$ALIBABA_CLOUD_ACCESS_KEY_ID" --access-key-secret "$ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+
+      - name: Deploy to ESA Pages
+        run: npx esa-cli deploy --skip-update-check -n ryuujo-com -e production -d "deploy ${GITHUB_SHA::7}"

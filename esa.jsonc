@@ -1,0 +1,8 @@
+{
+  "name": "ryuujo-com",
+  "description": "ryuujo.com personal site (Astro static)",
+  "assets": {
+    "directory": "./dist",
+    "notFoundStrategy": "404Page"
+  }
+}
