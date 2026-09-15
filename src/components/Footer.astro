@@ -4,6 +4,11 @@ const today = new Date();
 
 <footer>
 	&copy; {today.getFullYear()} Your name here. All rights reserved.
+	<div class="icp">
+		<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+			浙ICP备2026075780号
+		</a>
+	</div>
 	<div class="social-links">
 		<a href="https://m.webtoo.ls/@astro" target="_blank">
 			<span class="sr-only">Follow Astro on Mastodon</span>
@@ -51,6 +56,15 @@ const today = new Date();
 		justify-content: center;
 		gap: 1em;
 		margin-top: 1em;
+	}
+	.icp a {
+		font-size: 0.85em;
+		color: rgb(var(--gray));
+		text-decoration: none;
+	}
+	.icp a:hover {
+		color: rgb(var(--gray-dark));
+		text-decoration: underline;
 	}
 	.social-links a {
 		text-decoration: none;
