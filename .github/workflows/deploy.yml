@@ -45,25 +45,35 @@ jobs:
       - name: Build
         run: bun run build
 
-      # Login + deploy must share one step: esa-cli persists the session to
-      # ~/.esa/config, and a deploy in a separate step would not see it if an
-      # ALIBABA_CLOUD_* env group is present (it overrides saved credentials).
-      # CUSTOM_ENDPOINT cuts each login-check to one API call; ESA's API
-      # intermittently throttles with HTTP 417, so retry with backoff.
-      - name: Login and deploy to ESA Pages
+      # esa-cli re-validates credentials via the ESA API on every invocation
+      # (no bypass), and the free-tier API throttles aggressively with
+      # HTTP 417. So: write ~/.esa/config directly (same file `esa-cli login`
+      # saves, format per the CLI source), pin CUSTOM_ENDPOINT so each
+      # invocation makes exactly ONE validation call, and retry with jitter.
+      # Do NOT also export ALIBABA_CLOUD_*/ESA_* here: the env credential
+      # group would override the saved config (harmless but pointless).
+      - name: Deploy to ESA Pages
         env:
+          AK_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          AK_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
           CUSTOM_ENDPOINT: esa.cn-hangzhou.aliyuncs.com
         run: |
           set -e
-          for attempt in 1 2 3 4; do
-            if npx esa-cli login --skip-update-check \
-                 --access-key-id "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" \
-                 --access-key-secret "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}" \
-            && npx esa-cli deploy --skip-update-check \
+          mkdir -p ~/.esa/config
+          umask 077
+          cat > ~/.esa/config/default.toml <<EOF
+          endpoint = "esa.cn-hangzhou.aliyuncs.com"
+
+          [auth]
+          accessKeyId = "$AK_ID"
+          accessKeySecret = "$AK_SECRET"
+          EOF
+          for attempt in 1 2 3 4 5 6; do
+            if npx esa-cli deploy --skip-update-check \
                  -n ryuujo-com -e production -d "deploy ${GITHUB_SHA::7}"; then
               exit 0
             fi
-            echo "::warning::ESA attempt $attempt failed (API can throttle with 417); retrying in 60s"
-            sleep 60
+            echo "::warning::ESA deploy attempt $attempt failed (upstream throttles with 417); retrying"
+            sleep $((60 + RANDOM % 30))
           done
           exit 1
