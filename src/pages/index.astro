@@ -1,8 +1,7 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { SITE_TITLE, SITE_DESCRIPTION, GITHUB_URL, GITHUB_HANDLE } from '../consts';
 ---
 
 <!doctype html>
@@ -11,39 +10,123 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 	</head>
 	<body>
-		<Header />
 		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+			<img class="avatar" src="/avatar.png" width="112" height="112" alt="ryuujo's avatar" />
+			<h1>ryuujo</h1>
+			<p class="tagline">HaiDiLao obsessed IT nerd.</p>
+
+			<a class="card" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+				<svg
+					class="card-icon"
+					viewBox="0 0 16 16"
+					aria-hidden="true"
+					width="22"
+					height="22"
+				>
+					<path
+						fill="currentColor"
+						d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+					></path>
+				</svg>
+				<span class="card-text">
+					<span class="card-label">GitHub</span>
+					<span class="card-handle">{GITHUB_HANDLE}</span>
+				</span>
+				<svg
+					class="card-arrow"
+					viewBox="0 0 16 16"
+					aria-hidden="true"
+					width="16"
+					height="16"
+				>
+					<path
+						fill="currentColor"
+						d="M3.25 1a.75.75 0 0 0 0 1.5h8.19L1.97 12.03a.75.75 0 1 0 1.06 1.06L12.5 4.56v8.19a.75.75 0 0 0 1.5 0V2.5A1.5 1.5 0 0 0 12.5 1H3.25Z"
+					></path>
+				</svg>
+			</a>
 		</main>
 		<Footer />
 	</body>
 </html>
+
+<style>
+	body {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		background: #fff;
+	}
+	main {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 3em 1em;
+	}
+	.avatar {
+		width: 112px;
+		height: 112px;
+		border-radius: 50%;
+		box-shadow: 0 0 0 1px rgb(var(--gray-light));
+	}
+	h1 {
+		margin: 0.6em 0 0;
+		font-size: 2.2em;
+		letter-spacing: 0.01em;
+	}
+	.tagline {
+		margin: 0.2em 0 0;
+		color: rgb(var(--gray));
+		font-size: 1.05em;
+	}
+	.card {
+		display: flex;
+		align-items: center;
+		gap: 0.85em;
+		width: min(320px, 100%);
+		box-sizing: border-box;
+		margin-top: 2.4em;
+		padding: 0.9em 1.1em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 14px;
+		background: #fff;
+		color: rgb(var(--gray-dark));
+		text-decoration: none;
+		text-align: left;
+		transition:
+			transform 0.18s ease,
+			box-shadow 0.18s ease;
+	}
+	.card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(var(--gray), 22%);
+		color: rgb(var(--black));
+	}
+	.card-icon {
+		flex: none;
+		color: rgb(var(--black));
+	}
+	.card-text {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.35;
+	}
+	.card-label {
+		font-weight: 700;
+	}
+	.card-handle {
+		color: rgb(var(--gray));
+		font-size: 0.85em;
+	}
+	.card-arrow {
+		flex: none;
+		margin-left: auto;
+		color: rgb(var(--gray));
+	}
+	.card:hover .card-arrow {
+		color: var(--accent);
+	}
+</style>
