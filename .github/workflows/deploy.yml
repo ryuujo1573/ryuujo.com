@@ -45,11 +45,10 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Login to Aliyun ESA
-        run: npx esa-cli login --skip-update-check --access-key-id "$ALIBABA_CLOUD_ACCESS_KEY_ID" --access-key-secret "$ALIBABA_CLOUD_ACCESS_KEY_SECRET"
-        env:
-          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
-          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
-
-      - name: Deploy to ESA Pages
-        run: npx esa-cli deploy --skip-update-check -n ryuujo-com -e production -d "deploy ${GITHUB_SHA::7}"
+      # Login + deploy must share one step: esa-cli persists the session to
+      # ~/.esa/config, and a deploy in a separate step would not see it if an
+      # ALIBABA_CLOUD_* env group is present (it overrides saved credentials).
+      - name: Login and deploy to ESA Pages
+        run: |
+          npx esa-cli login --skip-update-check --access-key-id "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" --access-key-secret "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}"
+          npx esa-cli deploy --skip-update-check -n ryuujo-com -e production -d "deploy ${GITHUB_SHA::7}"
