@@ -8,12 +8,11 @@ const CARD_ID = 'wife-card';
 export const STORAGE_KEY = 'wife-card-unlocked';
 
 const STYLE = `
-#${CARD_ID} { display: none; }
-#${CARD_ID}.is-visible { display: flex; animation: wife-card-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+#${CARD_ID} { display: flex; animation: wife-card-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
 #${CARD_ID} .card-avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(var(--gray-light)); }
 #${CARD_ID} .card-badge { margin-left: 0.5em; padding: 0.05em 0.55em; border-radius: 999px; background: #ffe3ec; color: #d63384; font-size: 0.7em; font-weight: 700; vertical-align: 0.1em; }
 @keyframes wife-card-pop { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { #${CARD_ID}.is-visible { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #${CARD_ID} { animation: none; } }
 `;
 
 const CARD_HTML = `
