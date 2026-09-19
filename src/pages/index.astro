@@ -2,161 +2,137 @@
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, GITHUB_URL, GITHUB_HANDLE } from '../consts';
+
+let gh: { public_repos: number; followers: number } | null = null;
+try {
+	const res = await fetch('https://api.github.com/users/ryuujo1573', {
+		headers: { 'User-Agent': 'ryuujo.com-build' },
+	});
+	if (res.ok) gh = await res.json();
+} catch {
+	// build without stats when the API is unreachable
+}
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="shuanq">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<main>
-			<img class="avatar" src="/avatar.png" width="112" height="112" alt="ryuujo's avatar" />
-			<h1>ryuujo</h1>
-			<p class="tagline">HaiDiLao obsessed IT nerd.</p>
-
-			<a class="card" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-				<svg
-					class="card-icon"
-					viewBox="0 0 16 16"
-					aria-hidden="true"
-					width="22"
-					height="22"
-				>
-					<path
-						fill="currentColor"
-						d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-					></path>
-				</svg>
-				<span class="card-text">
-					<span class="card-label">GitHub</span>
-					<span class="card-handle">{GITHUB_HANDLE}</span>
-				</span>
-				<svg
-					class="card-arrow"
-					viewBox="0 0 16 16"
-					aria-hidden="true"
-					width="16"
-					height="16"
-				>
-					<path
-						fill="currentColor"
-						d="M3.25 1a.75.75 0 0 0 0 1.5h8.19L1.97 12.03a.75.75 0 1 0 1.06 1.06L12.5 4.56v8.19a.75.75 0 0 0 1.5 0V2.5A1.5 1.5 0 0 0 12.5 1H3.25Z"
-					></path>
-				</svg>
-			</a>
-		</main>
-		<Footer />
-		<script>
-			// Predicate for the wife-card easter egg: 10 clicks on blank page
-			// areas (idle > 2.5s resets the count). The easter-egg module is
-			// fetched via dynamic import only once this fires.
-			const STORAGE_KEY = 'wife-card-unlocked'; // keep in sync with src/easter-eggs/wife-card.ts
-			const CLICKS_NEEDED = 10;
-			const IDLE_RESET_MS = 2500;
-			const HEART_FROM_CLICK = 5;
-
-			const loadWifeCard = () =>
-				import('../easter-eggs/wife-card').then((module) => module.activate());
-
-			let unlocked = false;
+		<script is:inline>
 			try {
-				if (localStorage.getItem(STORAGE_KEY) === '1') {
-					unlocked = true;
-					loadWifeCard();
+				if (localStorage.getItem('ryuujo-theme') === 'night') {
+					document.documentElement.setAttribute('data-theme', 'shuanq-night');
 				}
-			} catch {
-				/* storage unavailable */
-			}
-
-			let clickCount = 0;
-			let lastClickAt = 0;
-
-			document.addEventListener('click', (event) => {
-				if (unlocked) return;
-				if (
-					event.target instanceof Element &&
-					event.target.closest('a, button, input, textarea, select, label')
-				)
-					return;
-
-				const now = Date.now();
-				if (now - lastClickAt > IDLE_RESET_MS) clickCount = 0;
-				lastClickAt = now;
-				clickCount++;
-
-				if (clickCount >= HEART_FROM_CLICK) spawnHeart(event.clientX, event.clientY);
-				if (clickCount < CLICKS_NEEDED) return;
-
-				unlocked = true;
-				loadWifeCard();
-			});
-
-			function spawnHeart(x: number, y: number) {
-				const heart = document.createElement('span');
-				heart.className = 'click-heart';
-				heart.textContent = '♥';
-				heart.style.left = `${x}px`;
-				heart.style.top = `${y}px`;
-				heart.addEventListener('animationend', () => heart.remove());
-				document.body.appendChild(heart);
-			}
+			} catch {}
 		</script>
+	</head>
+	<body class="flex min-h-dvh flex-col bg-base-200">
+		<main
+			class="relative flex flex-1 flex-col items-center justify-center gap-7 px-4 py-16 text-center"
+		>
+			<label
+				class="btn btn-circle btn-ghost swap swap-rotate absolute top-4 right-4"
+				aria-label="Toggle dark mode"
+			>
+				<input id="theme-toggle" type="checkbox" class="theme-controller" value="shuanq-night" />
+				<svg
+					class="swap-off h-5 w-5 fill-current"
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					aria-hidden="true"
+				>
+					<path
+						d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 3a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm0-18a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm9 8a1 1 0 1 1 0 2h-1a1 1 0 1 1 0-2h1zM4 12a1 1 0 1 1 0 2H3a1 1 0 1 1 0-2h1zm13.66-5.66a1 1 0 0 1 0 1.41l-.7.71a1 1 0 1 1-1.42-1.42l.71-.7a1 1 0 0 1 1.41 0zM7.05 16.95a1 1 0 0 1 0 1.41l-.71.71a1 1 0 1 1-1.41-1.42l.7-.7a1 1 0 0 1 1.42 0zm11.31 2.12a1 1 0 0 1-1.41 0l-.71-.7a1 1 0 0 1 1.42-1.42l.7.71a1 1 0 0 1 0 1.41zM6.34 6.05a1 1 0 0 1 1.42 0l.7.71a1 1 0 1 1-1.41 1.41l-.71-.7a1 1 0 0 1 0-1.42z"
+					></path>
+				</svg>
+				<svg
+					class="swap-on h-5 w-5 fill-current"
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					aria-hidden="true"
+				>
+					<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+				</svg>
+			</label>
+
+			<div class="tooltip" data-tip="ShuanQ for your access.">
+				<div class="avatar">
+					<div class="w-28 rounded-full shadow-md ring-4 ring-base-100">
+						<img src="/avatar.png" alt="ryuujo's avatar" width="112" height="112" />
+					</div>
+				</div>
+			</div>
+
+			<div>
+				<h1 class="text-5xl font-extrabold tracking-tight sm:text-6xl">ryuujo</h1>
+				<svg
+					class="text-primary/80 mx-auto mt-1"
+					width="96"
+					height="18"
+					viewBox="0 0 100 18"
+					fill="none"
+					aria-hidden="true"
+				>
+					<path
+						d="M2 9Q10 1 18 9T34 9T50 9T66 9T82 9T98 9"
+						stroke="currentColor"
+						stroke-width="3.5"
+						stroke-linecap="round"></path>
+				</svg>
+				<p class="text-base-content/70 mt-4 text-lg">HaiDiLao obsessed IT nerd.</p>
+			</div>
+
+			<div class="w-full max-w-xs space-y-3">
+				<a
+					href={GITHUB_URL}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="card border-base-300 bg-base-100 focus-visible:outline-primary hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 border shadow-sm transition-colors"
+				>
+					<div class="card-body flex-row items-center gap-3 px-5 py-4">
+						<svg class="h-6 w-6 shrink-0" viewBox="0 0 16 16" aria-hidden="true">
+							<path
+								fill="currentColor"
+								d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+							></path>
+						</svg>
+						<span class="text-left leading-tight">
+							<span class="block font-bold">GitHub</span>
+							<span class="text-base-content/60 block text-sm">{GITHUB_HANDLE}</span>
+						</span>
+						<svg class="text-base-content/40 ml-auto h-4 w-4 shrink-0" viewBox="0 0 16 16" aria-hidden="true">
+							<path
+								fill="currentColor"
+								d="M3.25 1a.75.75 0 0 0 0 1.5h8.19L1.97 12.03a.75.75 0 1 0 1.06 1.06L12.5 4.56v8.19a.75.75 0 0 0 1.5 0V2.5A1.5 1.5 0 0 0 12.5 1H3.25Z"
+							></path>
+						</svg>
+					</div>
+				</a>
+
+				{
+					gh && (
+						<div class="flex justify-center gap-2">
+							<span class="badge badge-outline">{gh.public_repos} public repos</span>
+							<span class="badge badge-outline">{gh.followers} followers</span>
+						</div>
+					)
+				}
+			</div>
+		</main>
+
+		<Footer />
 	</body>
 </html>
 
-<style>
-	body {
-		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
-		background: #fff;
+<script>
+	const checkbox = document.getElementById('theme-toggle') as HTMLInputElement | null;
+	if (checkbox) {
+		checkbox.checked =
+			document.documentElement.getAttribute('data-theme') === 'shuanq-night';
+		checkbox.addEventListener('change', () => {
+			try {
+				localStorage.setItem('ryuujo-theme', checkbox.checked ? 'night' : 'day');
+			} catch {}
+		});
 	}
-	main {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		text-align: center;
-		padding: 3em 1em;
-	}
-	.avatar {
-		width: 112px;
-		height: 112px;
-		border-radius: 50%;
-		box-shadow: 0 0 0 1px rgb(var(--gray-light));
-	}
-	h1 {
-		margin: 0.6em 0 0;
-		font-size: 2.2em;
-		letter-spacing: 0.01em;
-	}
-	.tagline {
-		margin: 0.2em 0 0;
-		color: rgb(var(--gray));
-		font-size: 1.05em;
-	}
-</style>
-
-<style is:global>
-	.click-heart {
-		position: fixed;
-		z-index: 9999;
-		pointer-events: none;
-		color: #d63384;
-		font-size: 18px;
-		transform: translate(-50%, -50%);
-		animation: heart-float 0.9s ease-out forwards;
-	}
-	@keyframes heart-float {
-		from {
-			opacity: 1;
-			transform: translate(-50%, -50%) scale(1);
-		}
-		to {
-			opacity: 0;
-			transform: translate(-50%, calc(-50% - 44px)) scale(1.5);
-		}
-	}
-</style>
+</script>

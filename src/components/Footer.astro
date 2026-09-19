@@ -2,31 +2,16 @@
 const today = new Date();
 ---
 
-<footer>
+<footer class="text-base-content/50 space-y-1 pb-8 text-center text-sm">
 	<p>&copy; {today.getFullYear()} ryuujo</p>
-	<p class="icp">
-		<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+	<p>
+		<a
+			href="https://beian.miit.gov.cn/"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="link link-hover"
+		>
 			浙ICP备2026075780号
 		</a>
 	</p>
 </footer>
-
-<style>
-	footer {
-		padding: 1.5em 1em 2em;
-		text-align: center;
-		color: rgb(var(--gray));
-		font-size: 0.9em;
-	}
-	footer p {
-		margin: 0.2em 0;
-	}
-	.icp a {
-		color: rgb(var(--gray));
-		text-decoration: none;
-	}
-	.icp a:hover {
-		color: rgb(var(--gray-dark));
-		text-decoration: underline;
-	}
-</style>
