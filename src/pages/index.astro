@@ -1,6 +1,7 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, GITHUB_URL, GITHUB_HANDLE } from '../consts';
 
 let gh: { public_repos: number; followers: number } | null = null;
@@ -30,30 +31,9 @@ try {
 		<main
 			class="relative flex flex-1 flex-col items-center justify-center gap-7 px-4 py-16 text-center"
 		>
-			<label
-				class="btn btn-circle btn-ghost swap swap-rotate absolute top-4 right-4"
-				aria-label="Toggle dark mode"
-			>
-				<input id="theme-toggle" type="checkbox" class="theme-controller" value="shuanq-night" />
-				<svg
-					class="swap-off h-5 w-5 fill-current"
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 24 24"
-					aria-hidden="true"
-				>
-					<path
-						d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 3a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm0-18a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm9 8a1 1 0 1 1 0 2h-1a1 1 0 1 1 0-2h1zM4 12a1 1 0 1 1 0 2H3a1 1 0 1 1 0-2h1zm13.66-5.66a1 1 0 0 1 0 1.41l-.7.71a1 1 0 1 1-1.42-1.42l.71-.7a1 1 0 0 1 1.41 0zM7.05 16.95a1 1 0 0 1 0 1.41l-.71.71a1 1 0 1 1-1.41-1.42l.7-.7a1 1 0 0 1 1.42 0zm11.31 2.12a1 1 0 0 1-1.41 0l-.71-.7a1 1 0 0 1 1.42-1.42l.7.71a1 1 0 0 1 0 1.41zM6.34 6.05a1 1 0 0 1 1.42 0l.7.71a1 1 0 1 1-1.41 1.41l-.71-.7a1 1 0 0 1 0-1.42z"
-					></path>
-				</svg>
-				<svg
-					class="swap-on h-5 w-5 fill-current"
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 24 24"
-					aria-hidden="true"
-				>
-					<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
-				</svg>
-			</label>
+			<div class="absolute top-4 right-4">
+				<ThemeToggle />
+			</div>
 
 			<div class="tooltip" data-tip="ShuanQ for your access.">
 				<div class="avatar">
@@ -123,16 +103,3 @@ try {
 		<Footer />
 	</body>
 </html>
-
-<script>
-	const checkbox = document.getElementById('theme-toggle') as HTMLInputElement | null;
-	if (checkbox) {
-		checkbox.checked =
-			document.documentElement.getAttribute('data-theme') === 'shuanq-night';
-		checkbox.addEventListener('change', () => {
-			try {
-				localStorage.setItem('ryuujo-theme', checkbox.checked ? 'night' : 'day');
-			} catch {}
-		});
-	}
-</script>

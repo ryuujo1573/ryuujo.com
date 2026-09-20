@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # /cats bakes Home Assistant stats in at build time — rebuild periodically
+  # so the page stays fresh.
+  schedule:
+    - cron: '23 */6 * * *'
 
 concurrency:
   group: esa-production
@@ -30,19 +34,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # Astro ISB (incremental static builds) reuses page output from the last
-      # build. Restore the cacheDir BEFORE `astro build`; Astro itself
-      # invalidates stale entries (module-graph hash + per-page cacheKey), so a
-      # rolling restore-key that always grabs the newest cache is safe.
-      - name: Restore Astro incremental build cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules/.astro
-          key: astro-isb-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            astro-isb-${{ runner.os }}-
-
+      # The /cats page fetches feeder stats from Home Assistant at build time
+      # via the HA_TOKEN secret. If the fetch fails the page still builds, just
+      # with a "data unavailable" notice.
       - name: Build
+        env:
+          HA_TOKEN: ${{ secrets.HA_TOKEN }}
         run: bun run build
 
       # esa-cli re-validates credentials via the ESA API on every invocation

@@ -1,0 +1,375 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import { fetchFeederData, type FeederData, type DispenseEvent } from '../lib/feeder';
+
+const TZ = 8 * 3600e3; // feeder lives in UTC+8, no DST
+const fmtHM = (ms: number) => new Date(ms + TZ).toISOString().slice(11, 16);
+const fmtMDHM = (ms: number) => {
+	const d = new Date(ms + TZ).toISOString();
+	return `${d.slice(5, 7)}/${d.slice(8, 10)} ${d.slice(11, 16)}`;
+};
+
+let data: FeederData | null = null;
+let error: Error | null = null;
+try {
+	data = await fetchFeederData();
+} catch (e) {
+	error = e instanceof Error ? e : new Error(String(e));
+}
+
+/* ---- 24h bowl-weight chart (static SVG, no client JS) ---- */
+const W = 720;
+const H = 220;
+const TOP = 14;
+const BOTTOM = 10;
+const PADX = 8;
+
+let chart: {
+	line: string;
+	area: string;
+	maxY: number;
+	markers: { x: number; label: string }[];
+	ticks: string[];
+} | null = null;
+
+if (data) {
+	const t1 = data.fetchedAt;
+	const t0 = t1 - 24 * 3600e3;
+	const pts = data.bowlHistory.filter((p) => p.t >= t0 && p.t <= t1);
+	if (pts.length >= 2) {
+		const peak = Math.max(...pts.map((p) => p.grams));
+		const maxY = Math.max(60, Math.ceil((peak + 10) / 20) * 20);
+		const x = (t: number) => PADX + ((t - t0) / (t1 - t0)) * (W - 2 * PADX);
+		const y = (g: number) => H - BOTTOM - (g / maxY) * (H - TOP - BOTTOM);
+		const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)} ${y(p.grams).toFixed(1)}`).join(' ');
+		const area = `${line} L${x(pts.at(-1)!.t).toFixed(1)} ${H} L${x(pts[0].t).toFixed(1)} ${H} Z`;
+		const kindLabel: Record<DispenseEvent['kind'], string> = { 计划: '计划出粮', 手动: '手动出粮', 按键: '按键出粮' };
+		const markers = data.dispenses
+			.filter((d) => d.at >= t0 && d.at <= t1)
+			.map((d) => ({ x: x(d.at), label: `${fmtMDHM(d.at)} · ${kindLabel[d.kind]} ${d.grams}g` }));
+		const ticks: string[] = [];
+		for (let i = 4; i >= 0; i--) ticks.push(fmtHM(t1 - i * 6 * 3600e3));
+		chart = { line, area, maxY, markers, ticks };
+	}
+}
+
+const kindBadge: Record<DispenseEvent['kind'], string> = {
+	计划: 'badge-success',
+	手动: 'badge-info',
+	按键: 'badge-accent',
+};
+const dailyMax = data ? Math.max(1, ...data.dailyEaten.map((d) => d.grams)) : 1;
+const anyFault = data ? Object.values(data.faults).some(Boolean) : false;
+const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
+---
+
+<!doctype html>
+<html lang="zh-CN" data-theme="shuanq">
+	<head>
+		<BaseHead title="猫 & 喂食器 · ryuujo" description="家里的猫与米家智能宠物喂食器的日常：进食统计、喂食计划和设备状态。" />
+		<script is:inline>
+			try {
+				if (localStorage.getItem('ryuujo-theme') === 'night') {
+					document.documentElement.setAttribute('data-theme', 'shuanq-night');
+				}
+			} catch {}
+		</script>
+	</head>
+	<body class="flex min-h-dvh flex-col bg-base-200">
+		<main class="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-10">
+			<div class="absolute top-4 right-4">
+				<ThemeToggle />
+			</div>
+
+			<!-- Hero -->
+			<header class="space-y-2 text-center">
+				<h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">
+					猫 <span class="text-primary">&</span> 喂食器
+				</h1>
+				<p class="text-base-content/70">
+					{
+						data ? (
+							<>
+								{data.device.name}
+								<span class="text-base-content/40"> · </span>
+								{data.device.area ?? '家里'}
+								<span class="text-base-content/40"> · </span>
+								{data.dispensing ? (
+									<span class="badge badge-warning badge-sm animate-pulse align-middle">出粮中…</span>
+								) : (
+									<span class="badge badge-success badge-sm align-middle">空闲</span>
+								)}
+							</>
+						) : (
+							'智能家居数据'
+						)
+					}
+				</p>
+				{
+					data && (
+						<p class="text-base-content/50 text-sm">
+							数据更新于 {updated} · 每 6 小时自动刷新
+						</p>
+					)
+				}
+			</header>
+
+			{
+				error && (
+					<div role="alert" class="alert alert-warning">
+						<svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+						</svg>
+						<span>
+							暂时拿不到智能家居数据（{error.message}）。猫咪们应该照常吃吃喝喝，稍后再来看看。
+						</span>
+					</div>
+				)
+			}
+
+			{
+				data && (
+					<>
+						<!-- KPI cards -->
+						<section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" aria-label="今日概览">
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-1 p-4">
+									<h2 class="text-base-content/60 text-xs font-medium">今日进食</h2>
+									<p class="text-2xl font-bold tabular-nums">{data.todayEatenGrams ?? '—'}<span class="text-sm font-normal">g</span></p>
+									<p class="text-base-content/50 text-xs">{data.lastEatenAt ? `最近 ${fmtHM(data.lastEatenAt)}` : '今天还没吃'}</p>
+								</div>
+							</div>
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-1 p-4">
+									<h2 class="text-base-content/60 text-xs font-medium">今日出粮</h2>
+									<p class="text-2xl font-bold tabular-nums">{data.todayDispenses.grams}<span class="text-sm font-normal">g</span></p>
+									<p class="text-base-content/50 text-xs">{data.todayDispenses.count} 次</p>
+								</div>
+							</div>
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-1 p-4">
+									<h2 class="text-base-content/60 text-xs font-medium">食盆现有</h2>
+									<p class="text-2xl font-bold tabular-nums">{data.bowlGrams ?? '—'}<span class="text-sm font-normal">g</span></p>
+									<p class="text-base-content/50 text-xs">实时称重</p>
+								</div>
+							</div>
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-1 p-4">
+									<h2 class="text-base-content/60 text-xs font-medium">下一餐</h2>
+									<p class="text-2xl font-bold tabular-nums">{data.nextMeal?.time ?? '—'}</p>
+									<p class="text-base-content/50 text-xs">
+										{data.nextMeal ? `${data.nextMeal.grams}g` : '无计划'}
+										{!data.scheduleEnabled && <span class="badge badge-ghost badge-xs ml-1">已暂停</span>}
+									</p>
+								</div>
+							</div>
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-1 p-4">
+									<h2 class="text-base-content/60 text-xs font-medium">粮仓余量</h2>
+									<p class={`text-2xl font-bold ${data.foodStorageLow ? 'text-warning' : ''}`}>{data.foodStorageLow ? '偏低' : '充足'}</p>
+									<p class="text-base-content/50 text-xs">储粮桶</p>
+								</div>
+							</div>
+							<div class={`card border-base-300 bg-base-100 border shadow-sm ${data.desiccant.percent === 0 ? 'border-warning' : ''}`}>
+								<div class="card-body gap-1 p-4">
+									<h2 class="text-base-content/60 text-xs font-medium">干燥剂</h2>
+									<p class={`text-2xl font-bold tabular-nums ${data.desiccant.percent === 0 ? 'text-warning' : ''}`}>{data.desiccant.percent}<span class="text-sm font-normal">%</span></p>
+									<p class="text-base-content/50 text-xs">{data.desiccant.percent === 0 ? '建议更换' : `剩余约 ${data.desiccant.daysLeft} 天`}</p>
+								</div>
+							</div>
+						</section>
+
+						<!-- 24h bowl weight chart -->
+						<section class="card border-base-300 bg-base-100 border shadow-sm" aria-label="食盆克重曲线">
+							<div class="card-body gap-3 p-5">
+								<div class="flex flex-wrap items-baseline justify-between gap-2">
+									<h2 class="font-bold">食盆克重 · 近 24 小时</h2>
+									<p class="text-base-content/50 text-xs">
+										{chart ? `纵轴 0–${chart.maxY}g · ▲ 出粮事件` : '数据不足'}
+									</p>
+								</div>
+								{
+									chart ? (
+										<figure class="flex flex-col gap-1">
+											<svg
+												viewBox={`0 0 ${W} ${H}`}
+												preserveAspectRatio="none"
+												class="h-44 w-full sm:h-52"
+												role="img"
+												aria-label="近 24 小时食盆克重折线图"
+											>
+												<defs>
+													<linearGradient id="bowl-fill" x1="0" y1="0" x2="0" y2="1">
+														<stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.22" />
+														<stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0.02" />
+													</linearGradient>
+												</defs>
+												<line x1={PADX} y1={TOP} x2={W - PADX} y2={TOP} class="stroke-base-300" stroke-width="1" stroke-dasharray="4 6" vector-effect="non-scaling-stroke" />
+												<line x1={PADX} y1={H - BOTTOM} x2={W - PADX} y2={H - BOTTOM} class="stroke-base-300" stroke-width="1" vector-effect="non-scaling-stroke" />
+												<path d={chart.area} fill="url(#bowl-fill)" />
+												<path d={chart.line} fill="none" class="stroke-primary" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+												{chart.markers.map((m) => (
+													<g>
+														<title>{m.label}</title>
+														<path
+															d={`M${m.x} ${H - BOTTOM - 9} l4.5 7.5 h-9 z`}
+															class="fill-secondary"
+															stroke="var(--color-base-100)"
+															stroke-width="1.5"
+															vector-effect="non-scaling-stroke"
+														/>
+													</g>
+												))}
+											</svg>
+											<figcaption class="text-base-content/50 flex w-full justify-between text-xs tabular-nums">
+												{chart.ticks.map((t) => (
+													<span>{t}</span>
+												))}
+											</figcaption>
+										</figure>
+									) : (
+										<p class="text-base-content/50 py-8 text-center text-sm">曲线数据还在积累中，稍后再来看。</p>
+									)
+								}
+							</div>
+						</section>
+
+						<!-- Schedule + daily eaten -->
+						<section class="grid gap-6 lg:grid-cols-2">
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-3 p-5">
+									<div class="flex items-baseline justify-between">
+										<h2 class="font-bold">喂食计划</h2>
+										<span class={`badge badge-sm ${data.scheduleEnabled ? 'badge-outline' : 'badge-ghost'}`}>
+											{data.scheduleEnabled ? `每日 ${data.schedule.length} 餐` : '已暂停'}
+										</span>
+									</div>
+									<ul class="space-y-1">
+										{data.schedule.length === 0 && <li class="text-base-content/50 text-sm">设备上还没有配置计划。</li>}
+										{data.schedule.map((meal) => {
+											const isNext = data!.nextMeal?.time === meal.time;
+											return (
+												<li
+													class={`flex items-center justify-between rounded-field px-3 py-2 ${isNext ? 'bg-secondary/10 ring-secondary/40 ring-1' : ''}`}
+												>
+													<span class="flex items-center gap-2">
+														<span class="font-bold tabular-nums">{meal.time}</span>
+														{isNext && <span class="badge badge-secondary badge-xs">下一餐</span>}
+													</span>
+													<span class="text-base-content/70 tabular-nums">{meal.grams}g</span>
+												</li>
+											);
+										})}
+									</ul>
+									{data.scheduleProgress != null && data.scheduleEnabled && (
+										<p class="text-base-content/50 text-xs">
+											今日计划执行进度 <span class="font-medium tabular-nums">{data.scheduleProgress}%</span>
+										</p>
+									)}
+								</div>
+							</div>
+
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-3 p-5">
+									<h2 class="font-bold">每日进食量</h2>
+									{data.dailyEaten.length > 0 ? (
+										<div class="flex h-36 items-end gap-2" role="img" aria-label="按天统计的进食克数柱状图">
+											{data.dailyEaten.map((day, i) => (
+												<div class="flex h-full flex-1 flex-col items-center justify-end gap-1">
+													<span class="text-base-content/60 text-xs tabular-nums">{day.grams}g</span>
+													<div
+														class={`w-full max-w-12 rounded-t-sm ${i === data!.dailyEaten.length - 1 ? 'bg-primary/80' : 'bg-secondary/70'}`}
+														style={`height:${Math.max(4, Math.round((day.grams / dailyMax) * 100))}%`}
+													></div>
+													<span class="text-base-content/50 text-[10px] tabular-nums">
+														{i === data!.dailyEaten.length - 1 ? '今天' : day.date.slice(5)}
+													</span>
+												</div>
+											))}
+										</div>
+									) : (
+										<p class="text-base-content/50 py-8 text-center text-sm">进食上报数据还在积累中。</p>
+									)}
+								</div>
+							</div>
+						</section>
+
+						<!-- Dispense log + device info -->
+						<section class="grid gap-6 lg:grid-cols-2">
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-2 p-5">
+									<div class="flex items-baseline justify-between">
+										<h2 class="font-bold">出粮记录</h2>
+										<span class="text-base-content/50 text-xs">
+											{data.totalDispenses.count} 次 · 共 {data.totalDispenses.grams}g
+										</span>
+									</div>
+									{data.dispenses.length === 0 ? (
+										<p class="text-base-content/50 py-8 text-center text-sm">还没有出粮记录。</p>
+									) : (
+										<ul class="divide-base-200 divide-y">
+											{data.dispenses.slice(0, 8).map((d) => (
+												<li class="flex items-center justify-between gap-2 py-2">
+													<span class="text-sm tabular-nums">{fmtMDHM(d.at)}</span>
+													<span class="flex items-center gap-2">
+														<span class={`badge badge-sm ${kindBadge[d.kind]}`}>{d.kind}</span>
+														<span class="w-12 text-right font-bold tabular-nums">{d.grams}g</span>
+													</span>
+												</li>
+											))}
+										</ul>
+									)}
+								</div>
+							</div>
+
+							<div class="card border-base-300 bg-base-100 border shadow-sm">
+								<div class="card-body gap-3 p-5">
+									<h2 class="font-bold">设备信息</h2>
+									<dl class="text-sm">
+										<div class="flex justify-between gap-4 py-1">
+											<dt class="text-base-content/50">型号</dt>
+											<dd class="font-mono text-xs leading-5">{data.device.model}</dd>
+										</div>
+										<div class="flex justify-between gap-4 py-1">
+											<dt class="text-base-content/50">品牌</dt>
+											<dd>{data.device.manufacturer}</dd>
+										</div>
+										{data.device.swVersion && (
+											<div class="flex justify-between gap-4 py-1">
+												<dt class="text-base-content/50">固件</dt>
+												<dd class="font-mono text-xs leading-5">{data.device.swVersion}</dd>
+											</div>
+										)}
+									</dl>
+									<div class="flex flex-wrap gap-1.5" aria-label="设备健康状态">
+										<span class={`badge badge-sm ${data.powered ? 'badge-success badge-outline' : 'badge-warning badge-outline'}`}>
+											{data.powered ? '供电正常' : '电池供电'}
+										</span>
+										<span class={`badge badge-sm ${anyFault ? 'badge-error' : 'badge-success badge-outline'}`}>
+											{anyFault ? '存在异常' : '各部件正常'}
+										</span>
+										{data.faults.jam && <span class="badge badge-error badge-sm">卡粮</span>}
+										{data.faults.bowl && <span class="badge badge-error badge-sm">食盆异常</span>}
+										{data.faults.weigh && <span class="badge badge-error badge-sm">称重传感器</span>}
+										{data.faults.pile && <span class="badge badge-warning badge-sm">粮食堆积</span>}
+										<span class={`badge badge-sm ${data.childLock ? 'badge-info badge-outline' : 'badge-ghost badge-outline'}`}>
+											童锁{data.childLock ? '已开' : '关闭'}
+										</span>
+									</div>
+									<p class="text-base-content/40 text-xs leading-5">
+										数据来自家庭 Home Assistant，仅含喂食器脱敏统计，不含任何凭据与私有信息。
+										页面在构建时生成：{updated}。
+									</p>
+								</div>
+							</div>
+						</section>
+					</>
+				)
+			}
+		</main>
+
+		<Footer />
+	</body>
+</html>
