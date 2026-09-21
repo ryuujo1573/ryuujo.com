@@ -563,9 +563,11 @@ const embedded = data ? JSON.stringify(data).replace(/</g, '\\u003c') : 'null';
 				}
 			}
 
+			let retryTimer: number | undefined;
 			async function refresh(manual: boolean) {
 				const btn = $('refresh-btn');
 				btn?.querySelector('svg')?.classList.add('animate-spin');
+				clearTimeout(retryTimer);
 				try {
 					const res = await fetch(API, { signal: AbortSignal.timeout(12_000) });
 					if (!res.ok) throw new Error(String(res.status));
@@ -574,12 +576,13 @@ const embedded = data ? JSON.stringify(data).replace(/</g, '\\u003c') : 'null';
 					render(d);
 					setLive('live', d.fetchedAt);
 				} catch {
-					// keep showing the last known data; only flag the status dot
+					// keep showing the last known data; flag the dot and retry shortly
 					const dot = $('live-dot');
 					if (dot) {
 						dot.textContent = '实时不可用';
 						dot.className = 'badge badge-warning badge-sm';
 					}
+					retryTimer = window.setTimeout(() => refresh(false), 5_000);
 				} finally {
 					btn?.querySelector('svg')?.classList.remove('animate-spin');
 				}

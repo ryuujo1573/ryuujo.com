@@ -56,6 +56,8 @@ const json = (obj, status = 200, headers = {}, origin = "https://ryuujo.com") =>
 			"content-type": "application/json; charset=utf-8",
 			...CORS,
 			"access-control-allow-origin": origin,
+			// The reflected origin must never leak across cache entries.
+			vary: "Origin",
 			...headers,
 		},
 	});
@@ -203,8 +205,13 @@ export default {
 		if (!env.HA_TOKEN)
 			return json({ error: "worker secret HA_TOKEN is not configured" }, 500, { "cache-control": "no-store" }, origin);
 
-		// Fixed cache key: incoming query string is intentionally discarded.
-		const cacheKey = new Request("https://api.ryuujo.com/cats", { method: "GET" });
+		// Query-free cache key; the reflected CORS origin is part of it so one
+		// origin's response can never be served to another (CORS pollution).
+		// `origin` is already restricted to the allow-list by corsOrigin().
+		const cacheKey = new Request(
+			`https://api.ryuujo.com/cats?origin=${encodeURIComponent(origin)}`,
+			{ method: "GET" },
+		);
 		const cache = caches.default;
 		const hit = await cache.match(cacheKey);
 		if (hit) return hit;
