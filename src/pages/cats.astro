@@ -63,6 +63,8 @@ const kindBadge: Record<DispenseEvent['kind'], string> = {
 const dailyMax = data ? Math.max(1, ...data.dailyEaten.map((d) => d.grams)) : 1;
 const anyFault = data ? Object.values(data.faults).some(Boolean) : false;
 const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
+/* Build-time snapshot handed to the client renderer (</ escaped for inline JSON) */
+const embedded = data ? JSON.stringify(data).replace(/</g, '\\u003c') : 'null';
 ---
 
 <!doctype html>
@@ -107,13 +109,21 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 						)
 					}
 				</p>
-				{
-					data && (
-						<p class="text-base-content/50 text-sm">
-							数据更新于 {updated} · 每 6 小时自动刷新
-						</p>
-					)
-				}
+				<p class="text-base-content/50 flex items-center justify-center gap-2 text-sm">
+					<span id="live-dot" class="badge badge-ghost badge-sm">构建时数据</span>
+					<span id="live-stamp">{data ? `更新于 ${updated}` : ''}</span>
+					<button
+						id="refresh-btn"
+						class="btn btn-ghost btn-xs btn-circle text-base-content/60"
+						aria-label="立即刷新"
+						title="立即刷新"
+						type="button"
+					>
+						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"></path>
+						</svg>
+					</button>
+				</p>
 			</header>
 
 			{
@@ -137,29 +147,29 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 							<div class="card border-base-300 bg-base-100 border shadow-sm">
 								<div class="card-body gap-1 p-4">
 									<h2 class="text-base-content/60 text-xs font-medium">今日进食</h2>
-									<p class="text-2xl font-bold tabular-nums">{data.todayEatenGrams ?? '—'}<span class="text-sm font-normal">g</span></p>
-									<p class="text-base-content/50 text-xs">{data.lastEatenAt ? `最近 ${fmtHM(data.lastEatenAt)}` : '今天还没吃'}</p>
+									<p class="text-2xl font-bold tabular-nums"><span id="kpi-eaten-v">{data.todayEatenGrams ?? '—'}</span><span class="text-sm font-normal">g</span></p>
+									<p class="text-base-content/50 text-xs" id="kpi-eaten-s">{data.lastEatenAt ? `最近 ${fmtHM(data.lastEatenAt)}` : '今天还没吃'}</p>
 								</div>
 							</div>
 							<div class="card border-base-300 bg-base-100 border shadow-sm">
 								<div class="card-body gap-1 p-4">
 									<h2 class="text-base-content/60 text-xs font-medium">今日出粮</h2>
-									<p class="text-2xl font-bold tabular-nums">{data.todayDispenses.grams}<span class="text-sm font-normal">g</span></p>
-									<p class="text-base-content/50 text-xs">{data.todayDispenses.count} 次</p>
+									<p class="text-2xl font-bold tabular-nums"><span id="kpi-feed-v">{data.todayDispenses.grams}</span><span class="text-sm font-normal">g</span></p>
+									<p class="text-base-content/50 text-xs" id="kpi-feed-s">{data.todayDispenses.count} 次</p>
 								</div>
 							</div>
 							<div class="card border-base-300 bg-base-100 border shadow-sm">
 								<div class="card-body gap-1 p-4">
 									<h2 class="text-base-content/60 text-xs font-medium">食盆现有</h2>
-									<p class="text-2xl font-bold tabular-nums">{data.bowlGrams ?? '—'}<span class="text-sm font-normal">g</span></p>
+									<p class="text-2xl font-bold tabular-nums"><span id="kpi-bowl-v">{data.bowlGrams ?? '—'}</span><span class="text-sm font-normal">g</span></p>
 									<p class="text-base-content/50 text-xs">实时称重</p>
 								</div>
 							</div>
 							<div class="card border-base-300 bg-base-100 border shadow-sm">
 								<div class="card-body gap-1 p-4">
 									<h2 class="text-base-content/60 text-xs font-medium">下一餐</h2>
-									<p class="text-2xl font-bold tabular-nums">{data.nextMeal?.time ?? '—'}</p>
-									<p class="text-base-content/50 text-xs">
+									<p class="text-2xl font-bold tabular-nums" id="kpi-next-v">{data.nextMeal?.time ?? '—'}</p>
+									<p class="text-base-content/50 text-xs" id="kpi-next-s">
 										{data.nextMeal ? `${data.nextMeal.grams}g` : '无计划'}
 										{!data.scheduleEnabled && <span class="badge badge-ghost badge-xs ml-1">已暂停</span>}
 									</p>
@@ -168,15 +178,15 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 							<div class="card border-base-300 bg-base-100 border shadow-sm">
 								<div class="card-body gap-1 p-4">
 									<h2 class="text-base-content/60 text-xs font-medium">粮仓余量</h2>
-									<p class={`text-2xl font-bold ${data.foodStorageLow ? 'text-warning' : ''}`}>{data.foodStorageLow ? '偏低' : '充足'}</p>
+									<p class={`text-2xl font-bold ${data.foodStorageLow ? 'text-warning' : ''}`} id="kpi-storage-v">{data.foodStorageLow ? '偏低' : '充足'}</p>
 									<p class="text-base-content/50 text-xs">储粮桶</p>
 								</div>
 							</div>
-							<div class={`card border-base-300 bg-base-100 border shadow-sm ${data.desiccant.percent === 0 ? 'border-warning' : ''}`}>
+							<div class={`card border-base-300 bg-base-100 border shadow-sm ${data.desiccant.percent === 0 ? 'border-warning' : ''}`} id="kpi-desic-card">
 								<div class="card-body gap-1 p-4">
 									<h2 class="text-base-content/60 text-xs font-medium">干燥剂</h2>
-									<p class={`text-2xl font-bold tabular-nums ${data.desiccant.percent === 0 ? 'text-warning' : ''}`}>{data.desiccant.percent}<span class="text-sm font-normal">%</span></p>
-									<p class="text-base-content/50 text-xs">{data.desiccant.percent === 0 ? '建议更换' : `剩余约 ${data.desiccant.daysLeft} 天`}</p>
+									<p class={`text-2xl font-bold tabular-nums ${data.desiccant.percent === 0 ? 'text-warning' : ''}`} id="kpi-desic-v">{data.desiccant.percent}<span class="text-sm font-normal">%</span></p>
+									<p class="text-base-content/50 text-xs" id="kpi-desic-s">{data.desiccant.percent === 0 ? '建议更换' : `剩余约 ${data.desiccant.daysLeft} 天`}</p>
 								</div>
 							</div>
 						</section>
@@ -186,53 +196,55 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 							<div class="card-body gap-3 p-5">
 								<div class="flex flex-wrap items-baseline justify-between gap-2">
 									<h2 class="font-bold">食盆克重 · 近 24 小时</h2>
-									<p class="text-base-content/50 text-xs">
+									<p class="text-base-content/50 text-xs" id="chart-note">
 										{chart ? `纵轴 0–${chart.maxY}g · ▲ 出粮事件` : '数据不足'}
 									</p>
 								</div>
-								{
-									chart ? (
-										<figure class="flex flex-col gap-1">
-											<svg
-												viewBox={`0 0 ${W} ${H}`}
-												preserveAspectRatio="none"
-												class="h-44 w-full sm:h-52"
-												role="img"
-												aria-label="近 24 小时食盆克重折线图"
-											>
-												<defs>
-													<linearGradient id="bowl-fill" x1="0" y1="0" x2="0" y2="1">
-														<stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.22" />
-														<stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0.02" />
-													</linearGradient>
-												</defs>
-												<line x1={PADX} y1={TOP} x2={W - PADX} y2={TOP} class="stroke-base-300" stroke-width="1" stroke-dasharray="4 6" vector-effect="non-scaling-stroke" />
-												<line x1={PADX} y1={H - BOTTOM} x2={W - PADX} y2={H - BOTTOM} class="stroke-base-300" stroke-width="1" vector-effect="non-scaling-stroke" />
-												<path d={chart.area} fill="url(#bowl-fill)" />
-												<path d={chart.line} fill="none" class="stroke-primary" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-												{chart.markers.map((m) => (
-													<g>
-														<title>{m.label}</title>
-														<path
-															d={`M${m.x} ${H - BOTTOM - 9} l4.5 7.5 h-9 z`}
-															class="fill-secondary"
-															stroke="var(--color-base-100)"
-															stroke-width="1.5"
-															vector-effect="non-scaling-stroke"
-														/>
-													</g>
-												))}
-											</svg>
-											<figcaption class="text-base-content/50 flex w-full justify-between text-xs tabular-nums">
-												{chart.ticks.map((t) => (
-													<span>{t}</span>
-												))}
-											</figcaption>
-										</figure>
-									) : (
-										<p class="text-base-content/50 py-8 text-center text-sm">曲线数据还在积累中，稍后再来看。</p>
-									)
-								}
+								<div id="chart-wrap">
+									{
+										chart ? (
+											<figure class="flex flex-col gap-1">
+												<svg
+													viewBox={`0 0 ${W} ${H}`}
+													preserveAspectRatio="none"
+													class="h-44 w-full sm:h-52"
+													role="img"
+													aria-label="近 24 小时食盆克重折线图"
+												>
+													<defs>
+														<linearGradient id="bowl-fill" x1="0" y1="0" x2="0" y2="1">
+															<stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.22" />
+															<stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0.02" />
+														</linearGradient>
+													</defs>
+													<line x1={PADX} y1={TOP} x2={W - PADX} y2={TOP} class="stroke-base-300" stroke-width="1" stroke-dasharray="4 6" vector-effect="non-scaling-stroke" />
+													<line x1={PADX} y1={H - BOTTOM} x2={W - PADX} y2={H - BOTTOM} class="stroke-base-300" stroke-width="1" vector-effect="non-scaling-stroke" />
+													<path d={chart.area} fill="url(#bowl-fill)" />
+													<path d={chart.line} fill="none" class="stroke-primary" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+													{chart.markers.map((m) => (
+														<g>
+															<title>{m.label}</title>
+															<path
+																d={`M${m.x} ${H - BOTTOM - 9} l4.5 7.5 h-9 z`}
+																class="fill-secondary"
+																stroke="var(--color-base-100)"
+																stroke-width="1.5"
+																vector-effect="non-scaling-stroke"
+															/>
+														</g>
+													))}
+												</svg>
+												<figcaption class="text-base-content/50 flex w-full justify-between text-xs tabular-nums">
+													{chart.ticks.map((t) => (
+														<span>{t}</span>
+													))}
+												</figcaption>
+											</figure>
+										) : (
+											<p class="text-base-content/50 py-8 text-center text-sm">曲线数据还在积累中，稍后再来看。</p>
+										)
+									}
+								</div>
 							</div>
 						</section>
 
@@ -242,11 +254,11 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 								<div class="card-body gap-3 p-5">
 									<div class="flex items-baseline justify-between">
 										<h2 class="font-bold">喂食计划</h2>
-										<span class={`badge badge-sm ${data.scheduleEnabled ? 'badge-outline' : 'badge-ghost'}`}>
+										<span class={`badge badge-sm`} id="sched-badge">
 											{data.scheduleEnabled ? `每日 ${data.schedule.length} 餐` : '已暂停'}
 										</span>
 									</div>
-									<ul class="space-y-1">
+									<ul class="space-y-1" id="sched-list">
 										{data.schedule.length === 0 && <li class="text-base-content/50 text-sm">设备上还没有配置计划。</li>}
 										{data.schedule.map((meal) => {
 											const isNext = data!.nextMeal?.time === meal.time;
@@ -263,35 +275,39 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 											);
 										})}
 									</ul>
-									{data.scheduleProgress != null && data.scheduleEnabled && (
-										<p class="text-base-content/50 text-xs">
-											今日计划执行进度 <span class="font-medium tabular-nums">{data.scheduleProgress}%</span>
-										</p>
-									)}
+									<p class="text-base-content/50 text-xs" id="sched-progress">
+										{data.scheduleProgress != null && data.scheduleEnabled && (
+											<>
+												今日计划执行进度 <span class="font-medium tabular-nums">{data.scheduleProgress}%</span>
+											</>
+										)}
+									</p>
 								</div>
 							</div>
 
 							<div class="card border-base-300 bg-base-100 border shadow-sm">
 								<div class="card-body gap-3 p-5">
 									<h2 class="font-bold">每日进食量</h2>
-									{data.dailyEaten.length > 0 ? (
-										<div class="flex h-36 items-end gap-2" role="img" aria-label="按天统计的进食克数柱状图">
-											{data.dailyEaten.map((day, i) => (
-												<div class="flex h-full flex-1 flex-col items-center justify-end gap-1">
-													<span class="text-base-content/60 text-xs tabular-nums">{day.grams}g</span>
-													<div
-														class={`w-full max-w-12 rounded-t-sm ${i === data!.dailyEaten.length - 1 ? 'bg-primary/80' : 'bg-secondary/70'}`}
-														style={`height:${Math.max(4, Math.round((day.grams / dailyMax) * 100))}%`}
-													></div>
-													<span class="text-base-content/50 text-[10px] tabular-nums">
-														{i === data!.dailyEaten.length - 1 ? '今天' : day.date.slice(5)}
-													</span>
-												</div>
-											))}
-										</div>
-									) : (
-										<p class="text-base-content/50 py-8 text-center text-sm">进食上报数据还在积累中。</p>
-									)}
+									<div id="bars-wrap">
+										{data.dailyEaten.length > 0 ? (
+											<div class="flex h-36 items-end gap-2" role="img" aria-label="按天统计的进食克数柱状图">
+												{data.dailyEaten.map((day, i) => (
+													<div class="flex h-full flex-1 flex-col items-center justify-end gap-1">
+														<span class="text-base-content/60 text-xs tabular-nums">{day.grams}g</span>
+														<div
+															class={`w-full max-w-12 rounded-t-sm ${i === data!.dailyEaten.length - 1 ? 'bg-primary/80' : 'bg-secondary/70'}`}
+															style={`height:${Math.max(4, Math.round((day.grams / dailyMax) * 100))}%`}
+														></div>
+														<span class="text-base-content/50 text-[10px] tabular-nums">
+															{i === data!.dailyEaten.length - 1 ? '今天' : day.date.slice(5)}
+														</span>
+													</div>
+												))}
+											</div>
+										) : (
+											<p class="text-base-content/50 py-8 text-center text-sm">进食上报数据还在积累中。</p>
+										)}
+									</div>
 								</div>
 							</div>
 						</section>
@@ -302,14 +318,14 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 								<div class="card-body gap-2 p-5">
 									<div class="flex items-baseline justify-between">
 										<h2 class="font-bold">出粮记录</h2>
-										<span class="text-base-content/50 text-xs">
+										<span class="text-base-content/50 text-xs" id="disp-total">
 											{data.totalDispenses.count} 次 · 共 {data.totalDispenses.grams}g
 										</span>
 									</div>
 									{data.dispenses.length === 0 ? (
-										<p class="text-base-content/50 py-8 text-center text-sm">还没有出粮记录。</p>
+										<p class="text-base-content/50 py-8 text-center text-sm" id="disp-empty">还没有出粮记录。</p>
 									) : (
-										<ul class="divide-base-200 divide-y">
+										<ul class="divide-base-200 divide-y" id="disp-list">
 											{data.dispenses.slice(0, 8).map((d) => (
 												<li class="flex items-center justify-between gap-2 py-2">
 													<span class="text-sm tabular-nums">{fmtMDHM(d.at)}</span>
@@ -371,5 +387,218 @@ const updated = data ? `${fmtMDHM(data.fetchedAt)}（北京时间）` : '';
 		</main>
 
 		<Footer />
+
+		<script type="application/json" id="cats-data" set:html={embedded} />
+
+		<script>
+			// Live refresh: poll the parameter-free JSON endpoint every 30s and on
+			// demand. The endpoint accepts no query strings and holds no secrets —
+			// the client only ever sends a bare GET /cats.
+			const TZ = 8 * 3600e3;
+			const API = 'https://api.ryuujo.com/cats';
+			const POLL_MS = 30_000;
+
+			const $ = (id: string) => document.getElementById(id);
+			const fmtHM = (ms: number) => new Date(ms + TZ).toISOString().slice(11, 16);
+			const fmtMDHM = (ms: number) => {
+				const d = new Date(ms + TZ).toISOString();
+				return `${d.slice(5, 7)}/${d.slice(8, 10)} ${d.slice(11, 16)}`;
+			};
+
+			type Meal = { time: string; grams: number };
+			type Dispense = { at: number; grams: number; kind: '计划' | '手动' | '按键' };
+			type Data = {
+				fetchedAt: number;
+				bowlGrams: number | null;
+				dispensing: boolean;
+				foodStorageLow: boolean;
+				scheduleEnabled: boolean;
+				scheduleProgress: number | null;
+				nextMeal: Meal | null;
+				schedule: Meal[];
+				desiccant: { percent: number; daysLeft: number };
+				todayEatenGrams: number | null;
+				lastEatenAt: number | null;
+				todayDispenses: { count: number; grams: number };
+				totalDispenses: { count: number; grams: number };
+				dispenses: Dispense[];
+				dailyEaten: { date: string; grams: number }[];
+				bowlHistory: { t: number; grams: number }[];
+			};
+
+			const kindBadge: Record<Dispense['kind'], string> = {
+				计划: 'badge-success',
+				手动: 'badge-info',
+				按键: 'badge-accent',
+			};
+			const kindLabel: Record<Dispense['kind'], string> = {
+				计划: '计划出粮',
+				手动: '手动出粮',
+				按键: '按键出粮',
+			};
+
+			function chartSvg(d: Data): string {
+				const W = 720, H = 220, TOP = 14, BOTTOM = 10, PADX = 8;
+				const t1 = d.fetchedAt;
+				const t0 = t1 - 24 * 3600e3;
+				const pts = d.bowlHistory.filter((p) => p.t >= t0 && p.t <= t1);
+				if (pts.length < 2) return '<p class="text-base-content/50 py-8 text-center text-sm">曲线数据还在积累中，稍后再来看。</p>';
+				const peak = Math.max(...pts.map((p) => p.grams));
+				const maxY = Math.max(60, Math.ceil((peak + 10) / 20) * 20);
+				const x = (t: number) => PADX + ((t - t0) / (t1 - t0)) * (W - 2 * PADX);
+				const y = (g: number) => H - BOTTOM - (g / maxY) * (H - TOP - BOTTOM);
+				const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)} ${y(p.grams).toFixed(1)}`).join(' ');
+				const area = `${line} L${x(pts[pts.length - 1].t).toFixed(1)} ${H} L${x(pts[0].t).toFixed(1)} ${H} Z`;
+				const markers = d.dispenses
+					.filter((dd) => dd.at >= t0 && dd.at <= t1)
+					.map(
+						(dd) =>
+							`<g><title>${fmtMDHM(dd.at)} · ${kindLabel[dd.kind]} ${dd.grams}g</title><path d="M${x(dd.at).toFixed(1)} ${H - BOTTOM - 9} l4.5 7.5 h-9 z" class="fill-secondary" stroke="var(--color-base-100)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></g>`,
+					)
+					.join('');
+				const ticks = [4, 3, 2, 1, 0].map((i) => `<span>${fmtHM(t1 - i * 6 * 3600e3)}</span>`).join('');
+				return `<figure class="flex flex-col gap-1">
+					<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="h-44 w-full sm:h-52" role="img" aria-label="近 24 小时食盆克重折线图">
+						<defs><linearGradient id="bowl-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.22"/><stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0.02"/></linearGradient></defs>
+						<line x1="${PADX}" y1="${TOP}" x2="${W - PADX}" y2="${TOP}" class="stroke-base-300" stroke-width="1" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"/>
+						<line x1="${PADX}" y1="${H - BOTTOM}" x2="${W - PADX}" y2="${H - BOTTOM}" class="stroke-base-300" stroke-width="1" vector-effect="non-scaling-stroke"/>
+						<path d="${area}" fill="url(#bowl-fill)"/>
+						<path d="${line}" fill="none" class="stroke-primary" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+						${markers}
+					</svg>
+					<figcaption class="text-base-content/50 flex w-full justify-between text-xs tabular-nums">${ticks}</figcaption>
+				</figure>`;
+			}
+
+			function render(d: Data) {
+				const set = (id: string, text: string) => {
+					const el = $(id);
+					if (el) el.textContent = text;
+				};
+				set('kpi-eaten-v', d.todayEatenGrams == null ? '—' : String(d.todayEatenGrams));
+				set('kpi-eaten-s', d.lastEatenAt ? `最近 ${fmtHM(d.lastEatenAt)}` : '今天还没吃');
+				set('kpi-feed-v', String(d.todayDispenses.grams));
+				set('kpi-feed-s', `${d.todayDispenses.count} 次`);
+				set('kpi-bowl-v', d.bowlGrams == null ? '—' : String(d.bowlGrams));
+				set('kpi-next-v', d.nextMeal?.time ?? '—');
+				set('kpi-next-s', d.nextMeal ? `${d.nextMeal.grams}g${d.scheduleEnabled ? '' : ' 已暂停'}` : '无计划');
+				set('kpi-storage-v', d.foodStorageLow ? '偏低' : '充足');
+				const storage = $('kpi-storage-v');
+				storage?.classList.toggle('text-warning', d.foodStorageLow);
+				set('kpi-desic-v', String(d.desiccant.percent));
+				set('kpi-desic-s', d.desiccant.percent === 0 ? '建议更换' : `剩余约 ${d.desiccant.daysLeft} 天`);
+				const desicVal = $('kpi-desic-v');
+				desicVal?.classList.toggle('text-warning', d.desiccant.percent === 0);
+				$('kpi-desic-card')?.classList.toggle('border-warning', d.desiccant.percent === 0);
+
+				set(
+					'chart-note',
+					d.bowlHistory.filter((p) => p.t >= d.fetchedAt - 24 * 3600e3).length >= 2
+						? `纵轴 0–${Math.max(60, Math.ceil((Math.max(...d.bowlHistory.map((p) => p.grams)) + 10) / 20) * 20)}g · ▲ 出粮事件`
+						: '数据不足',
+				);
+				const chartWrap = $('chart-wrap');
+				if (chartWrap) chartWrap.innerHTML = chartSvg(d);
+
+				const badge = $('sched-badge');
+				if (badge) {
+					badge.textContent = d.scheduleEnabled ? `每日 ${d.schedule.length} 餐` : '已暂停';
+					badge.className = 'badge badge-sm';
+				}
+				const list = $('sched-list');
+				if (list) {
+					list.innerHTML = d.schedule.length
+						? d.schedule
+								.map((m) => {
+									const isNext = d.nextMeal?.time === m.time;
+									return `<li class="flex items-center justify-between rounded-field px-3 py-2 ${isNext ? 'bg-secondary/10 ring-secondary/40 ring-1' : ''}"><span class="flex items-center gap-2"><span class="font-bold tabular-nums">${m.time}</span>${isNext ? '<span class="badge badge-secondary badge-xs">下一餐</span>' : ''}</span><span class="text-base-content/70 tabular-nums">${m.grams}g</span></li>`;
+								})
+								.join('')
+						: '<li class="text-base-content/50 text-sm">设备上还没有配置计划。</li>';
+				}
+				const prog = $('sched-progress');
+				if (prog) {
+					prog.innerHTML =
+						d.scheduleProgress != null && d.scheduleEnabled
+							? `今日计划执行进度 <span class="font-medium tabular-nums">${d.scheduleProgress}%</span>`
+							: '';
+				}
+
+				const bars = $('bars-wrap');
+				if (bars) {
+					const max = Math.max(1, ...d.dailyEaten.map((x) => x.grams));
+					bars.innerHTML = d.dailyEaten.length
+						? `<div class="flex h-36 items-end gap-2" role="img" aria-label="按天统计的进食克数柱状图">${d.dailyEaten
+								.map((day, i) => {
+									const last = i === d.dailyEaten.length - 1;
+									return `<div class="flex h-full flex-1 flex-col items-center justify-end gap-1"><span class="text-base-content/60 text-xs tabular-nums">${day.grams}g</span><div class="w-full max-w-12 rounded-t-sm ${last ? 'bg-primary/80' : 'bg-secondary/70'}" style="height:${Math.max(4, Math.round((day.grams / max) * 100))}%"></div><span class="text-base-content/50 text-[10px] tabular-nums">${last ? '今天' : day.date.slice(5)}</span></div>`;
+								})
+								.join('')}</div>`
+						: '<p class="text-base-content/50 py-8 text-center text-sm">进食上报数据还在积累中。</p>';
+				}
+
+				set('disp-total', `${d.totalDispenses.count} 次 · 共 ${d.totalDispenses.grams}g`);
+				const disp = $('disp-list');
+				const empty = $('disp-empty');
+				if (disp) {
+					disp.innerHTML = d.dispenses
+						.slice(0, 8)
+						.map(
+							(x) =>
+								`<li class="flex items-center justify-between gap-2 py-2"><span class="text-sm tabular-nums">${fmtMDHM(x.at)}</span><span class="flex items-center gap-2"><span class="badge badge-sm ${kindBadge[x.kind]}">${x.kind}</span><span class="w-12 text-right font-bold tabular-nums">${x.grams}g</span></span></li>`,
+						)
+						.join('');
+				}
+				if (empty) empty.remove();
+			}
+
+			function setLive(state: 'live', stampMs: number | null) {
+				const dot = $('live-dot');
+				const stamp = $('live-stamp');
+				if (!dot || !stamp) return;
+				if (state === 'live') {
+					dot.textContent = '实时';
+					dot.className = 'badge badge-success badge-sm';
+					stamp.textContent = `实时更新 · ${stampMs ? fmtHM(stampMs) : ''}（北京时间）`;
+				}
+			}
+
+			async function refresh(manual: boolean) {
+				const btn = $('refresh-btn');
+				btn?.querySelector('svg')?.classList.add('animate-spin');
+				try {
+					const res = await fetch(API, { signal: AbortSignal.timeout(12_000) });
+					if (!res.ok) throw new Error(String(res.status));
+					const d = (await res.json()) as Data;
+					if (!d || typeof d.fetchedAt !== 'number') throw new Error('bad payload');
+					render(d);
+					setLive('live', d.fetchedAt);
+				} catch {
+					// keep showing the last known data; only flag the status dot
+					const dot = $('live-dot');
+					if (dot) {
+						dot.textContent = '实时不可用';
+						dot.className = 'badge badge-warning badge-sm';
+					}
+				} finally {
+					btn?.querySelector('svg')?.classList.remove('animate-spin');
+				}
+			}
+
+			const embedded = document.getElementById('cats-data');
+			if (embedded) {
+				try {
+					render(JSON.parse(embedded.textContent || 'null'));
+				} catch {}
+			}
+			$('refresh-btn')?.addEventListener('click', () => refresh(true));
+			setInterval(() => {
+				if (document.visibilityState === 'visible') refresh(false);
+			}, POLL_MS);
+			document.addEventListener('visibilitychange', () => {
+				if (document.visibilityState === 'visible') refresh(false);
+			});
+			refresh(false);
+		</script>
 	</body>
 </html>
