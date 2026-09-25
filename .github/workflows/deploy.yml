@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # /cats bakes Home Assistant stats in at build time — rebuild periodically
-  # so the page stays fresh.
-  schedule:
-    - cron: '23 */6 * * *'
 
 concurrency:
   group: esa-production
@@ -34,9 +30,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # The /cats page fetches feeder stats from Home Assistant at build time
-      # via the HA_TOKEN secret. If the fetch fails the page still builds, just
-      # with a "data unavailable" notice.
+      # Live /cats data flows through the Cloudflare worker (api.ryuujo.com/cats);
+      # the build-time HA fetch only produces the first-paint snapshot and the
+      # offline fallback. If it fails the page still builds, just without a
+      # snapshot until the next build.
       - name: Build
         env:
           HA_TOKEN: ${{ secrets.HA_TOKEN }}

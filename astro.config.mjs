@@ -8,8 +8,9 @@ import { defineConfig, fontProviders } from "astro/config";
 export default defineConfig({
   site: "https://ryuujo.com",
 
-  // No experimental.incrementalBuild: /cats bakes Home Assistant data in at
-  // build time, so scheduled rebuilds must always regenerate every page.
+  // No experimental.incrementalBuild: the /cats page bakes a Home Assistant
+  // snapshot in at build time (first paint + fallback only — live data comes
+  // from the worker), so every build should regenerate it.
 
   integrations: [sitemap()],
 
