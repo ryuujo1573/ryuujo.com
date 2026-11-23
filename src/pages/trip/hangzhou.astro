@@ -1,0 +1,141 @@
+---
+import HangzhouRouteMap from '../../components/trip/HangzhouRouteMap.astro';
+import '../../styles/hangzhou-trip.css';
+
+const title = '杭州三日慢游';
+const description = '从香樟公寓出发，带爸妈轻松游览灵隐寺、西溪湿地与拱宸桥。三日时间表、路线地图和雨天备选。';
+const canonical = new URL('/trip/hangzhou', Astro.site);
+const assets = '/trip/hangzhou';
+const cover = assets + '/media/west-lake.webp';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content={description}>
+  <meta name="theme-color" content="#f7f6f1">
+  <title>{title}</title>
+  <link rel="canonical" href={canonical}>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={canonical}>
+  <meta property="og:image" content={new URL(cover, Astro.site)}>
+  <link rel="stylesheet" href={assets + '/vendor/leaflet.css'}>
+  <script is:inline defer src={assets + '/vendor/leaflet.js'}></script>
+  <script is:inline defer src={assets + '/trip-map.js'}></script>
+</head>
+<body id="top">
+  <a class="skip" href="#itinerary">跳到行程</a>
+  <header class="site-header">
+    <div class="frame header-inner">
+      <a class="brand" href="#top">杭州慢游</a>
+      <nav aria-label="页面导航">
+        <a href="#routes">路线地图</a>
+        <a href="#itinerary">三日行程</a>
+        <a href="#flex">机动备选</a>
+      </nav>
+    </div>
+  </header>
+  <main class="frame">
+    <section class="hero" aria-labelledby="title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="dot"></span> 从香樟公寓出发</p>
+        <h1 id="title">杭州三日<br><em>慢慢游</em></h1>
+        <p class="hero-description">带爸妈看古寺、坐船游湿地、到运河边坐坐。每天只去一个片区，留出等车和午休的时间。</p>
+        <a class="primary" href="#routes">查看路线地图</a>
+      </div>
+      <figure class="hero-photo">
+        <img src={cover} alt="杭州西湖湖面、雷峰塔和远处的山" width="1440" height="810" fetchpriority="high">
+        <figcaption>杭州西湖 · 雷峰塔</figcaption>
+      </figure>
+    </section>
+
+    <HangzhouRouteMap />
+
+    <section class="itinerary-section" id="itinerary" aria-labelledby="itinerary-title">
+      <div class="section-heading">
+        <div><h2 id="itinerary-title">三日行程</h2><p>每天留约 45 分钟机动时间，顺序可以互换。</p></div>
+      </div>
+      <article class="trip-card lingyin" id="day-lingyin">
+        <header class="card-head">
+          <div><p class="card-kicker">第 1 天 · 优先工作日</p><h3>灵隐寺</h3><p class="card-intro">看飞来峰造像和寺院主殿，到大雄宝殿后按体力折返。</p></div>
+          <a class="navigation" href="https://uri.amap.com/search?keyword=西溪路608号停车场&amp;city=杭州&amp;view=map" target="_blank" rel="noopener">高德找接驳点</a>
+        </header>
+        <div class="card-content">
+          <ol class="timeline">
+            <li><span class="time">09:00–10:15</span><div><strong>出发、接驳和入园</strong><p>打车到西溪路 608 号下客点，沿指示走到换乘大厅，再坐接驳车。带证件原件，按预约时段入园。</p></div></li>
+            <li><span class="time">10:15–11:30</span><div><strong>飞来峰造像和灵隐寺</strong><p>主路边挑一两处造像，看看天王殿、大雄宝殿。少走一点的话，逛完前面两处就往回走。</p></div></li>
+            <li><span class="time">11:30–13:15</span><div><strong>接驳返回，坐下吃午饭</strong><p>住处附近的好好食有广式粥和饭，人均约 20–30 元。</p></div></li>
+            <li><span class="time">13:15 以后</span><div><strong>回住处午休</strong><p>上午预留的机动时间可用来排队、等车或休息。</p></div></li>
+          </ol>
+          <div class="side-note"><h4>先确认预约</h4><p>微信或支付宝搜「杭州灵隐飞来峰」。一般游客至少提前一天预约。年满 70 岁可凭本人有效证件原件免预约。</p><p>工作日 8:00–17:00 打车进灵隐管控区需换接驳；周末和节假日看当天安排。</p>
+            <a href="https://hznews.hangzhou.com.cn/chengshi/content/2026-01/26/content_9168669.htm" target="_blank" rel="noopener">景区预约通告</a>
+          </div>
+        </div>
+      </article>
+      <article class="trip-card xixi" id="day-xixi">
+        <header class="card-head">
+          <div><p class="card-kicker">第 2 天 · 留给风小的一天</p><h3>西溪湿地坐船</h3><p class="card-intro">从周家村上船，主要在船上看景，想下船就挑一站。</p></div>
+          <a class="navigation" href="https://uri.amap.com/search?keyword=西溪湿地周家村游客中心&amp;city=杭州&amp;view=map" target="_blank" rel="noopener">高德找周家村</a>
+        </header>
+        <div class="card-content">
+          <ol class="timeline">
+            <li><span class="time">09:40–10:30</span><div><strong>到周家村，买票候船</strong><p>请售票处推荐当天能回到周家村、途中少走路的电瓶船线路。</p></div></li>
+            <li><span class="time">10:30–12:15</span><div><strong>坐电瓶船看湿地</strong><p>想下船可选深潭口，岸边看看就折回码头。继续坐船前先问回程班次。</p></div></li>
+            <li><span class="time">12:15–13:45</span><div><strong>午饭，打车回住处</strong><p>可打车去西溪印象城 A 座 3 楼的外婆家，人均约 54 元。</p></div></li>
+            <li><span class="time">13:45 以后</span><div><strong>午休，自由安排</strong><p>给候船和换船预留机动时间，午饭可以顺延。</p></div></li>
+          </ol>
+          <div class="side-note"><h4>买票前问回程</h4><p>确认回到同一码头、是否要换船。爸妈若上下船吃力，可以先电话问景区当天的线路和踏步情况。</p>
+            <a href="tel:+8657188106688">景区电话 0571-88106688</a><a href="https://hznews.hangzhou.com.cn/chengshi/content/2026-06/10/content_9236860.htm" target="_blank" rel="noopener">查看电瓶船路线</a>
+          </div>
+        </div>
+      </article>
+      <article class="trip-card canal" id="day-canal">
+        <header class="card-head">
+          <div><p class="card-kicker">第 3 天 · 可放返程日</p><h3>拱宸桥看运河</h3><p class="card-intro">工美馆挑一厅，出门到西桥头看看运河。</p></div>
+          <a class="navigation" href="https://www.amap.com/place/B023B0I02U" target="_blank" rel="noopener">高德找工美馆</a>
+        </header>
+        <div class="card-content">
+          <ol class="timeline">
+            <li><span class="time">09:45–10:30</span><div><strong>出发，到拱宸桥西岸</strong><p>打车到小河路 334 号。坐地铁可从丰潭路乘 2 号线，三坝换 5 号线，大运河 D 口出，步行约 10 分钟到馆。</p></div></li>
+            <li><span class="time">10:30–11:45</span><div><strong>看展厅和西桥头</strong><p>只看感兴趣的展厅，再到西桥头拍照。留在西岸就能看桥。</p></div></li>
+            <li><span class="time">11:45–13:15</span><div><strong>坐下吃午饭，再叫车</strong><p>就近可吃小河路 306 号至尊鲨鱼，人均约 123 元。</p></div></li>
+            <li><span class="time">13:15 以后</span><div><strong>午休、取行李或返程</strong><p>赶车就把游览缩成西桥头看景和午饭。</p></div></li>
+          </ol>
+          <div class="side-note"><h4>周二可换一天</h4><p>工艺美术博物馆周二闭馆。可以把这天和西溪对调，想照常来就只看西桥头、坐下喝茶。</p>
+            <a href="https://edu.hangzhou.com.cn/2024rdzt/zdagzyjd/content/content_8764516.html?k=1" target="_blank" rel="noopener">场馆与交通信息</a>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="flex-section" id="flex" aria-labelledby="flex-title">
+      <div class="section-heading"><div><h2 id="flex-title">当天想换计划</h2><p>根据天气、预约和爸妈的体力选一个替代地点。</p></div></div>
+      <div class="flex-grid">
+        <article><span>风雨大或停航</span><h3>中国湿地博物馆</h3><p>天目山路 402 号。改在室内看湿地展，通常周一闭馆。</p><a href="https://uri.amap.com/search?keyword=中国湿地博物馆&amp;city=杭州&amp;view=map" target="_blank" rel="noopener">高德找博物馆</a></article>
+        <article><span>灵隐约不上</span><h3>香积寺</h3><p>香积寺巷 1 号。逛完主殿，在大兜路运河边坐坐。</p><a href="https://uri.amap.com/search?keyword=香积寺&amp;city=杭州&amp;view=map" target="_blank" rel="noopener">高德找香积寺</a></article>
+        <article><span>返程前想少走</span><h3>天目里</h3><p>天目山路 398 号。逛书店、喝杯咖啡，时间好掌握。</p><a href="https://uri.amap.com/search?keyword=杭州天目里&amp;city=杭州&amp;view=map" target="_blank" rel="noopener">高德找天目里</a></article>
+      </div>
+    </section>
+  </main>
+  <footer class="frame site-footer">
+    <details>
+      <summary>交通、场馆和餐厅资料</summary>
+      <div class="references">
+        <a href="https://www.lingyinsi.org/detail_57_19456.html" target="_blank" rel="noopener">灵隐交通通告</a>
+        <a href="https://apiv4.cst123.cn/cst/news/shareDetail?id=1207656056935677952" target="_blank" rel="noopener">西溪路换乘中心</a>
+        <a href="https://you.ctrip.com/sight/hangzhou14/1416602.html" target="_blank" rel="noopener">中国湿地博物馆</a>
+        <a href="https://amap-pc-ssr.amap.com/ssr/subway/hangzhou-3301" target="_blank" rel="noopener">杭州地铁线路图</a>
+        <a href="https://mdaily.hangzhou.com.cn/mrsb/2026/02/27/article_detail_3_20260227A161.html" target="_blank" rel="noopener">好好食</a>
+        <a href="https://gs.ctrip.com/html5/you/foods/fooddetail/1011/5148589.html" target="_blank" rel="noopener">外婆家</a>
+        <a href="https://you.ctrip.com/food/14/15468403.html" target="_blank" rel="noopener">至尊鲨鱼</a>
+      </div>
+    </details>
+    <p class="credit">西湖照片 <a href="https://commons.wikimedia.org/wiki/File:Westlake%26leifengpagoda202012.jpg" target="_blank" rel="noopener">Charlie fong</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a> · 缩放裁切</p>
+  </footer>
+</body>
+</html>

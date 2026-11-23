@@ -1,0 +1,52 @@
+<section class="map-section" id="routes" aria-labelledby="route-title">
+  <div class="section-heading">
+    <div>
+      <h2 id="route-title">路线地图</h2>
+      <p>选一天看走法，或点地图上的地点。</p>
+    </div>
+    <div class="map-filters" role="group" aria-label="筛选地图路线">
+      <button type="button" data-route="all" aria-pressed="true" disabled>总览</button>
+      <button type="button" data-route="lingyin" aria-pressed="false" disabled>灵隐寺</button>
+      <button type="button" data-route="xixi" aria-pressed="false" disabled>西溪</button>
+      <button type="button" data-route="canal" aria-pressed="false" disabled>拱宸桥</button>
+    </div>
+  </div>
+  <div class="route-layout">
+    <aside class="route-guide" aria-label="路线和交通">
+      <div class="origin">
+        <span class="origin-icon" aria-hidden="true"></span>
+        <div><strong>住宿起点</strong><a href="https://www.amap.com/place/B023B026C6" target="_blank" rel="noopener">香樟公寓 · 文三西路 360 号</a></div>
+      </div>
+      <div class="guide-days">
+        <div class="guide-day lingyin" data-route-row="lingyin">
+        <button class="guide-select" type="button" data-route="lingyin" aria-pressed="false" disabled>
+            <span class="day-id">01</span><span><strong>灵隐寺</strong><small>打车到西溪路 608 号，再换接驳</small></span>
+          </button>
+          <a href="#day-lingyin" class="guide-link">查看时间表</a>
+        </div>
+        <div class="guide-day xixi" data-route-row="xixi">
+        <button class="guide-select" type="button" data-route="xixi" aria-pressed="false" disabled>
+            <span class="day-id">02</span><span><strong>西溪湿地</strong><small>打车到周家村，从大码头坐船</small></span>
+          </button>
+          <a href="#day-xixi" class="guide-link">查看时间表</a>
+        </div>
+        <div class="guide-day canal" data-route-row="canal">
+        <button class="guide-select" type="button" data-route="canal" aria-pressed="false" disabled>
+            <span class="day-id">03</span><span><strong>拱宸桥西岸</strong><small>打车优先，也可坐地铁换乘一次</small></span>
+          </button>
+          <a href="#day-canal" class="guide-link">查看时间表</a>
+        </div>
+      </div>
+    </aside>
+    <div class="map-panel">
+      <div id="trip-map" aria-label="杭州三日路线交互地图" role="region">
+        <p class="map-fallback">地图未载入时，可使用各天行程中的高德入口。</p>
+      </div>
+      <div class="map-caption">
+        <div class="legend"><span><i></i>打车</span><span><i class="dash"></i>接驳</span><span><i class="walk"></i>步行</span></div>
+        <span>连线示意，实际路线看导航</span>
+      </div>
+      <p id="map-status" class="visually-hidden" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
