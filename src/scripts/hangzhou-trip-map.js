@@ -1,6 +1,7 @@
 (() => {
   const canvas = document.querySelector('#trip-map');
   const status = document.querySelector('#map-status');
+  const caption = document.querySelector('#map-caption-text');
   const buttons = [...document.querySelectorAll('button[data-route]')];
   if (!window.L) return;
 
@@ -8,7 +9,7 @@
     home: {
       coordinates: [30.28148, 120.10228],
       name: '香樟公寓',
-      detail: '文三西路 360 号附近，三天都从这里出发。',
+      detail: '文三西路 360 号附近。杭州两条市内路线都从这里出发。',
       url: 'https://www.amap.com/place/B023B026C6',
     },
     transfer: {
@@ -29,66 +30,108 @@
       detail: '走主路看飞来峰造像和寺院前部。按预约时段入园。',
       query: '灵隐飞来峰景区游客中心',
     },
-    xixiGate: {
-      coordinates: [30.25733, 120.05645],
-      name: '周家村游客中心',
-      detail: '打车到周家村入口，再步行前往大码头。',
-      query: '西溪湿地周家村游客中心',
+    brokenBridge: {
+      coordinates: [30.26083, 120.14694],
+      name: '断桥',
+      detail:
+        '从少年宫公交站沿北山街走到桥头。想多走一小段，可以上白堤再折返。',
+      query: '断桥残雪',
     },
-    xixi: {
-      coordinates: [30.26027, 120.05722],
-      name: '周家村大码头',
-      detail: '从这里上电瓶船。买票前确认回到同一码头的班次。',
-      query: '西溪湿地周家村大码头',
+    yueTemple: {
+      coordinates: [30.25472, 120.12944],
+      name: '岳王庙',
+      detail: '北山街 80 号。7 路往灵隐方向到岳庙站，或短程打车。',
     },
-    museum: {
-      coordinates: [30.31804, 120.1322],
-      name: '工艺美术博物馆',
-      detail: '小河路 334 号。从这里向拱宸桥西头短走一段。',
-      url: 'https://www.amap.com/place/B023B0I02U',
+    quyuan: {
+      coordinates: [30.25432, 120.12759],
+      name: '曲院风荷',
+      detail: '体力允许再去，从北门附近沿水岸短走。',
+      url: 'https://www.amap.com/place/B023B17WL5',
     },
-    canal: {
-      coordinates: [30.32044, 120.13418],
-      name: '拱宸桥西岸',
-      detail: '在西岸看桥与运河，按体力决定要不要继续逛。',
-      url: 'https://www.amap.com/place/B0FFL7KMLY',
+    qingchun: {
+      coordinates: [30.2469, 120.10428],
+      name: '庆春朴门',
+      detail: '灵隐店在白乐桥 181 号。计划 11:30 吃午饭，电话 0571-87975777。',
+      url: 'https://gaode.com/place/B0GKVZ1O4T',
+    },
+    suzhouNorth: {
+      coordinates: [31.42365, 120.63905],
+      name: '苏州北站',
+      detail: 'G1866 于 09:02 到这里，出站后打车去拙政园。',
+    },
+    garden: {
+      coordinates: [31.3263, 120.6248],
+      name: '拙政园与苏博本馆',
+      detail: '拙政园东北街 178 号，苏博本馆就在隔壁的 204 号。两处分别预约。',
+      query: '拙政园',
+    },
+    pingjiang: {
+      coordinates: [31.32067, 120.626],
+      name: '平江路',
+      detail: '从白塔东路方向进入，沿河走一小段，再找茶馆休息。',
+      query: '平江路与白塔东路交叉口',
+    },
+    suzhouStation: {
+      coordinates: [31.33056, 120.60639],
+      name: '苏州站',
+      detail: '17:30 左右离开古城，来这里乘 18:52 的 G7491 返回杭州东。',
     },
   };
 
   const routes = {
+    westlake: {
+      name: '西湖北岸',
+      city: '杭州',
+      color: '#1e6154',
+      legs: [
+        ['home', 'brokenBridge', null],
+        ['brokenBridge', 'yueTemple', '8 8'],
+        ['yueTemple', 'quyuan', '2 7'],
+      ],
+      stops: [
+        {
+          point: 'brokenBridge',
+          badge: '01',
+          direction: 'right',
+          overview: true,
+        },
+        { point: 'yueTemple', badge: '庙', direction: 'right' },
+        { point: 'quyuan', badge: '·', direction: 'bottom', minor: true },
+      ],
+    },
     lingyin: {
-      name: '灵隐寺',
-      number: '01',
+      name: '庆春朴门与灵隐寺',
+      city: '杭州',
       color: '#8c3e2f',
       legs: [
         ['home', 'transfer', null],
         ['transfer', 'lingyinBus', '8 8'],
-        ['lingyinBus', 'lingyin', '2 7'],
+        ['lingyinBus', 'qingchun', '2 7'],
+        ['qingchun', 'lingyin', '2 7'],
       ],
-      main: ['transfer', 'lingyin'],
-      extra: ['lingyinBus'],
-    },
-    xixi: {
-      name: '西溪湿地',
-      number: '02',
-      color: '#1e6154',
-      legs: [
-        ['home', 'xixiGate', null],
-        ['xixiGate', 'xixi', '2 7'],
+      stops: [
+        { point: 'transfer', badge: '换', direction: 'left', minor: true },
+        { point: 'lingyinBus', badge: '·', direction: 'bottom', minor: true },
+        { point: 'qingchun', badge: '餐', direction: 'right' },
+        { point: 'lingyin', badge: '02', direction: 'left', overview: true },
       ],
-      main: ['xixi'],
-      extra: ['xixiGate'],
     },
-    canal: {
-      name: '拱宸桥西岸',
-      number: '03',
+    suzhou: {
+      name: '苏州古城',
+      city: '苏州',
       color: '#3e557c',
+      focus: ['garden', 'pingjiang', 'suzhouStation'],
       legs: [
-        ['home', 'museum', null],
-        ['museum', 'canal', '2 7'],
+        ['suzhouNorth', 'garden', null],
+        ['garden', 'pingjiang', '2 7'],
+        ['pingjiang', 'suzhouStation', null],
       ],
-      main: ['canal'],
-      extra: ['museum'],
+      stops: [
+        { point: 'suzhouNorth', badge: '到', direction: 'left' },
+        { point: 'garden', badge: '03', direction: 'right' },
+        { point: 'pingjiang', badge: '巷', direction: 'bottom' },
+        { point: 'suzhouStation', badge: '返', direction: 'left' },
+      ],
     },
   };
 
@@ -123,18 +166,19 @@
 
   const lines = L.featureGroup().addTo(map);
   const markers = L.featureGroup().addTo(map);
+  let activeRoute = 'all';
 
-  function amapLink(point) {
+  function amapLink(point, city) {
     if (point.url) return point.url;
     const query = new URLSearchParams({
-      keyword: point.query,
-      city: '杭州',
+      keyword: point.query ?? point.name,
+      city,
       view: 'map',
     });
     return 'https://uri.amap.com/search?' + query.toString();
   }
 
-  function pin(key, badge, fill, permanent, direction, minor = false) {
+  function pin(key, badge, fill, permanent, direction, minor, city) {
     const point = points[key];
     const icon = L.divIcon({
       className: 'map-pin',
@@ -159,7 +203,7 @@
     const description = document.createElement('p');
     description.textContent = point.detail;
     const link = document.createElement('a');
-    link.href = amapLink(point);
+    link.href = amapLink(point, city);
     link.target = '_blank';
     link.rel = 'noopener';
     link.textContent = '在高德地图打开';
@@ -179,11 +223,12 @@
   }
 
   function showRoute(key) {
+    activeRoute = key;
     map.closePopup();
     lines.clearLayers();
     markers.clearLayers();
 
-    const ids = key === 'all' ? Object.keys(routes) : [key];
+    const ids = key === 'all' ? ['westlake', 'lingyin'] : [key];
     for (const id of ids) {
       const route = routes[id];
       for (const [from, to, dashArray] of route.legs) {
@@ -204,31 +249,23 @@
       }
     }
     fitRoutes();
-    pin('home', '起', '#19392f', true, 'right');
+    if (key !== 'suzhou') {
+      pin('home', '起', '#19392f', true, 'right', false, '杭州');
+    }
     for (const id of ids) {
       const route = routes[id];
-      if (key !== 'all') {
-        route.extra.forEach((point) =>
-          pin(point, '·', route.color, false, 'right', true),
+      for (const stop of route.stops) {
+        if (key === 'all' && !stop.overview) continue;
+        pin(
+          stop.point,
+          stop.badge,
+          route.color,
+          !stop.minor,
+          stop.direction,
+          stop.minor,
+          route.city,
         );
       }
-      route.main.forEach((point) => {
-        const isTransfer = point === 'transfer';
-        const direction =
-          isTransfer || point === 'canal'
-            ? 'left'
-            : point === 'xixi'
-              ? 'bottom'
-              : 'right';
-        pin(
-          point,
-          isTransfer ? '换' : route.number,
-          route.color,
-          !isTransfer || key !== 'all',
-          direction,
-          isTransfer,
-        );
-      });
     }
 
     for (const button of buttons)
@@ -238,14 +275,22 @@
     }
     status.textContent =
       key === 'all'
-        ? '已显示三天的路线。'
+        ? '已显示杭州的两条市内路线。'
         : '已显示' + routes[key].name + '路线。';
+    caption.textContent =
+      key === 'suzhou'
+        ? '缩小地图可查看苏州北站，实际走法看导航。'
+        : '连线仅供示意，实际走法看导航。';
   }
 
   function fitRoutes() {
     const narrow = canvas.clientWidth <= 500;
+    const focus = routes[activeRoute]?.focus;
+    const bounds = focus
+      ? L.latLngBounds(focus.map((point) => points[point].coordinates))
+      : lines.getBounds();
     map.invalidateSize({ pan: false });
-    map.fitBounds(lines.getBounds(), {
+    map.fitBounds(bounds, {
       padding: narrow ? [28, 28] : [65, 35],
       maxZoom: 14,
       animate: false,
